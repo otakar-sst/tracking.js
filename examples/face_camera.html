@@ -7,7 +7,6 @@
 
   <script src="../build/tracking-min.js"></script>
   <script src="../build/data/face-min.js"></script>
-   <script src="../node_modules/dat.gui/build/dat.gui.min.js"></script>
   <script src="assets/stats.min.js"></script>
 
   <style>
@@ -16,51 +15,130 @@
     margin-top: 120px;
     position: absolute;
   }
+  body {
+    height: 1000px;
+  }
   </style>
 </head>
 <body>
-  <div class="demo-title">
-    <p><a href="http://trackingjs.com" target="_parent">tracking.js</a> － get user's webcam and detect faces</p>
-  </div>
 
-  <div class="demo-frame">
-    <div class="demo-container">
-      <video id="video" width="320" height="240" preload autoplay loop muted></video>
+
+      <video id="cam" width="320" height="240" preload autoplay loop muted></video>
       <canvas id="canvas" width="320" height="240"></canvas>
-    </div>
-  </div>
+      <video id="video" style="margin-top: 400px;" width="320" height="240" preload autoplay loop controls>
+        <source src="./assets/test.mp4" type="video/mp4">
+      </video>
 
+<div class="slidecontainer">
+  <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+  <p>Value: <span id="demo"></span></p>
+</div>
+
+<script>
+var slider = document.getElementById("myRange");
+var output = document.getElementById("demo");
+output.innerHTML = slider.value;
+    
+    sensitivity = slider.value;
+    console.log(sensitivity);
+
+slider.oninput = function() {
+  output.innerHTML = this.value;
+}
+</script>
+    
   <script>
+    
+
+          function averageFace(faceDetected, faceDetectedAverageCurrent) {
+        if (typeof averageFace.counter == 'undefined' || averageFace.counter >= sensitivity+1) {
+          averageFace.counter = 0;
+          averageFace.faceDetectedAverage = false;
+        }
+        if(averageFace.counter < sensitivity) {
+          averageFace.faceDetectedAverage = averageFace.faceDetectedAverage || faceDetected;      
+          ++averageFace.counter;
+          return faceDetectedAverageCurrent;
+        }
+        else if (averageFace.counter == sensitivity) {
+          ++averageFace.counter;
+          console.log(faceDetectedAverage);
+          if(faceDetectedAverage == true) {
+            playVideo();
+          }
+          else if(faceDetectedAverage == false) {
+            stopVideo();
+          }
+          return averageFace.faceDetectedAverage;
+        }
+        else {
+          console.log("ERROR");
+        }
+      }
+        
+      function playVideo() {
+          testvid.play();
+          //testvid.muted= false;
+          //alert(testvid.paused);
+      }
+        
+      function stopVideo() {
+          testvid.pause();
+          //testvid.muted= true;
+      }
+      
+      
     window.onload = function() {
-      var video = document.getElementById('video');
+      var video = document.getElementById('cam');
+      var testvid = document.getElementById('video');
       var canvas = document.getElementById('canvas');
       var context = canvas.getContext('2d');
+      var faceDetected = false;
+      var faceDetectedAverage = 'undefined';
+      var sensitivity = 10;
+        
+        console.log("ONE");
 
       var tracker = new tracking.ObjectTracker('face');
-      tracker.setInitialScale(4);
+      tracker.setInitialScale(3);
       tracker.setStepSize(2);
       tracker.setEdgesDensity(0.1);
 
-      tracking.track('#video', tracker, { camera: true });
-
-      tracker.on('track', function(event) {
+      tracking.track('#cam', tracker, { camera: true });
+        
+console.log("TWO");
+    };
+      
+     window.onClick = function(){
+        console.log("AAA");
+        // If the video was clicked, we will set the flag to true.
+        if(event.target.id != "testvid" && !testvid.paused){
+          console.log("A");
+          trackerTask.stop();
+          testvid.pause();
+        }
+        else if(event.target.id != "testvid" && testvid.paused){
+          console.log("B");
+          testvid.play();
+          trackerTask.run();
+            
+                  tracker.on('track', function(event) {
         context.clearRect(0, 0, canvas.width, canvas.height);
+        faceDetectedAverage = averageFace(faceDetected, faceDetectedAverage);
 
+        faceDetected = false;
+          
         event.data.forEach(function(rect) {
-          context.strokeStyle = '#a64ceb';
+          faceDetected = true;
+          context.strokeStyle = '#ff0000';
           context.strokeRect(rect.x, rect.y, rect.width, rect.height);
-          context.font = '11px Helvetica';
-          context.fillStyle = "#fff";
-          context.fillText('x: ' + rect.x + 'px', rect.x + rect.width + 5, rect.y + 11);
-          context.fillText('y: ' + rect.y + 'px', rect.x + rect.width + 5, rect.y + 22);
         });
       });
+            
+        }
+      }
+      
 
-      var gui = new dat.GUI();
-      gui.add(tracker, 'edgesDensity', 0.1, 0.5).step(0.01);
-      gui.add(tracker, 'initialScale', 1.0, 10.0).step(0.1);
-      gui.add(tracker, 'stepSize', 1, 5).step(0.1);
-    };
   </script>
 
 </body>
